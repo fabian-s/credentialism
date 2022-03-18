@@ -159,7 +159,7 @@ CS majors can get their grades from [uni2work](https://uni2work.ifi.lmu.de),
 maths majors (theoretically) as well (... I think?),
 the files to upload there expect this format:
 
-<img src="https://github.com/fabian-s/credentialism/blob/master/README_files/figures/paste-809C5790.png"/>
+<img src="https://github.com/fabian-s/credentialism/blob/main/README_files/figures/paste-809C5790.png"/>
 
 ```{r export-uni2work}
 results_cs_maths <- dplyr::filter(results, 
