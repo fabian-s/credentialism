@@ -15,9 +15,13 @@ Sys.setenv(CLIPR_ALLOW = TRUE) #needed so this doc compiles non-interactively
 library(credentialism)
 ```
 
-This is not an actual R package, just some utility functions and this Rmd file.
+This is not fully developed R package, just some utility functions and this Rmd file.
 
-The intended use is for you to modify this Rmd-file so it fits your exam, run the chunks interactively, and then paste the relevant outputs into your lecture homepage and the template spreadsheet "Notenliste"-files for the grades.
+The intended use is 
+
+1. install the package locally: `remotes::install_github("fabian-s/credentialism")`
+2. download this Rmd file: `utils::download.file(url = "https://github.com/fabian-s/credentialism/blob/main/README.Rmd", destfile = <Your_File>)`  
+3. modify it so it fits your exam and run the chunks interactively, and copy-paste the relevant outputs into your lecture homepage or the template spreadsheet "Notenliste"-files for the grades.
 
 
 ## Import grading information
