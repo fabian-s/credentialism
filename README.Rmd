@@ -11,16 +11,18 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(rio)
 library(clipr)
-source(here::here("R/utils-grading.R"))
-source(here::here("R/utils-export.R"))
+Sys.setenv(CLIPR_ALLOW = TRUE) #needed so this doc compiles non-interactively
+library(credentialism)
 ```
+
+This is not an actual R package, just some utility functions and this Rmd file.
+
+The intended use is for you to modify this Rmd-file so it fits your exam, run the chunks interactively, and then paste the relevant outputs into your lecture homepage and the template spreadsheet "Notenliste"-files for the grades.
 
 
 ## Import grading information
 
-Assumes that student info was collected from moodle via the standard form for
-"Klausuranmeldung" and that the resulting sheet as exported from moodle also
-contains the points (or grades) the students achieved.
+Assumes that student info was collected from moodle via the standard form for "Klausuranmeldung" and that the resulting sheet as exported from moodle also contains the points (or grades) the students achieved.
 
 **For processing further, your `results`-table needs at least the following columns:**
 
@@ -28,48 +30,48 @@ contains the points (or grades) the students achieved.
 -   `vn`, `nn`: surname, family name
 -   `po`, `anderePO`: subjects, as exported from moodle's "Klausuranmeldung"
 -   `points`: achieved points  --  
-    **NB:** 0 points are assumed to mean invalidated / "entwertet" or no-show  
-    if you have participants that actually got 0 points, just set them to 0.1, e.g...
+  **NB:** 0 points are assumed to mean invalidated / "entwertet" or no-show if you have participants that actually got 0 points, just set them to 0.1, e.g...
 -   (`grade`, if not generated automatically from `points`, see below)
 
-E.g.
+E.g. for the fake spreadsheet included in the package:
 
 ```{r import}
 results <- 
-  rio::import("/home/fabians/lehre/stat1/attic/ex-21/Punkte-short-Matrikeln-ergänzt.csv") 
+  rio::import(system.file("extdata", "testtest.csv", package = "credentialism")) 
 head(results)
 
 results <- results |> 
-  select(c(Matrikelnummer, vn, nn,  po, Gesamt, `andere PO`)) |> 
-  rename("matriculation" = Matrikelnummer, 
-         "points" = Gesamt)
-glimpse(results)
+  dplyr::select(c(Matrikelnummer, vn, nn,  po, Gesamt, `andere PO`)) |> 
+  dplyr::rename("matriculation" = Matrikelnummer, 
+                "points" = Gesamt)
+pillar::glimpse(results)
 ```
 
 
 ## Set grades
 
 Set maximum number of points and adjust recommended grading scheme
-(*Notenstufen*) if necessary:
+(*Notenstufen*) if necessary -- e.g. `niceness = 0.01`  would decrease the
+point percentages needed for a given grade by 1 \%.
 
 ```{r scheme}
-MAX_POINTS <- 256 #! change this if you rerun for a different exam
+MAX_POINTS <- 75 #! change this if you rerun for a different exam
 (scheme <- set_grading_scheme(max_points = MAX_POINTS, niceness = .0))
 ```
-
 
 Then compute grades and identify borderline cases
 (skip this if your table already contains grades and not just points, but **make sure
 `scheme` and `MAX_POINTS` are set correctly**):
 ```{r grade}
 results <- results |> 
-  mutate(
+  dplyr::mutate(
     grade = grade_points(points, scheme = scheme),
     # who failed by 2 pts or less?
     almost_but_no_cookie = (points < scheme[1]) & (points > (scheme[1] - 2)))
-glimpse(results)
+pillar::glimpse(results)
 
-filter(results, isTRUE(almost_but_no_cookie)) # be merciful to these folks who just missed the cut-off...?
+# be merciful to these folks who just missed the cut-off...?
+dplyr::filter(results, almost_but_no_cookie)
 ```
 
 See `utils-grading.R` for function details.
@@ -77,14 +79,16 @@ See `utils-grading.R` for function details.
 ## Summarize & publish (pseudonymous) results
 
 `summarize_grades` and `publish_grades` both put their output on the
-clipboard if you run them in `interactive()`-mode. 
+clipboard if you run them in `interactive()`-mode.  
 These outputs are formatted as an HTML table,
 so you can paste them directly into Moodle's HTML editor... :)
 
 ```{r summarize}
-# without invalid / no-show exams
+# without invalid / no-show exams (by default):
 summarized <- 
-  summarize_grades(results, scheme = scheme, max_points = MAX_POINTS, exclude_invalid = FALSE)
+  summarize_grades(results, scheme = scheme, 
+                   max_points = MAX_POINTS) #, exclude_invalid = TRUE)
+
 summarized |> knitr::kable()
 
 # all:
@@ -93,43 +97,56 @@ summarized_all <-
 summarized_all |> knitr::kable()
 ```
 
-Pseudonymous results:
+Pseudonymous results with matriculation numbers for your moodle page or public notices:
 
 ```{r publish, results='markup'}
 public <- publish_grades(results, scheme = scheme, max_points = MAX_POINTS)
 public |> knitr::kable()
 
 # without no-shows / invalidated:
-public_all <- results |>  filter(grade != "invalid") |> 
-   publish_grades(results, scheme = scheme, max_points = MAX_POINTS)  
-public:all |> knitr::kable()+
+public_all <- results |>  dplyr::filter(grade != "invalid") |> 
+  publish_grades(scheme = scheme, max_points = MAX_POINTS)  
+public_all |> knitr::kable()
 ```
-
-
 
 ## Export official grade tables
 
 ### Export for *new* Statistik PO 2021
 
-```{r export-new}
-results_new <- mutate(results, 
-  grade_num = as.numeric(as.character(grade)) * 100, 
-  geschl = "",
-  abschl = "",
-  Stg = "",
-  pversuch = "",
-  pvermerk = "",
-  email = "") |> 
-  rename(mtknr = "matriculation", 
-         nachname = "nn",
-         vorname = "vn",
-         poversion = "po",
-         bewertung = "grade_num") |> 
-  select(mtknr, nachname, vorname, geschl, abschl, Stg, 
-         poversion, pversuch, pvermerk, bewertung, email)
+```{r export-new-1}
+results_new <- dplyr::mutate(results, 
+                             grade_num = as.numeric(as.character(grade)) * 100, 
+                             geschl = "",
+                             abschl = "",
+                             Stg = "",
+                             pversuch = "",
+                             pvermerk = "",
+                             email = "") |> 
+  dplyr::rename(mtknr = "matriculation", 
+                nachname = "nn",
+                vorname = "vn",
+                poversion = "po",
+                bewertung = "grade_num") |> 
+  dplyr::select(mtknr, nachname, vorname, geschl, abschl, Stg, 
+                poversion, pversuch, pvermerk, bewertung, email)
 
-results_new |> print.data.frame(row.names = FALSE, max = nrow(results_new)) |> 
-  clipr::write_clip()  #put it on the clipboard, ctrl-v into the template .xls-File
+
+results_new |>  
+  print.data.frame(row.names = FALSE, max = nrow(results_new)) |> 
+  clipr::write_clip() 
+# the last command puts the table on the clipboard, 
+# so you can <ctrl-v> it directly into the template .xls-file
+```
+
+Actually need to generate separate tables for each subject, like so:
+```{r export-new-2, eval = FALSE}
+for (this_po in unique(results_new$poversion)) {
+  message("####\n grades for ", this_po, ":\n")
+  results_new |> dplyr::filter(poversion == this_po) |> 
+    print.data.frame(row.names = FALSE, max = nrow(results_new)) |> 
+    clipr::write_clip()  
+  readline("ready for next group? ")
+}
 ```
 
 ### Export for Statistik PO 2010 etc
@@ -139,14 +156,16 @@ not automated, sorry.
 ### Export to Uni2Work
 
 CS majors can get their grades from [uni2work](https://uni2work.ifi.lmu.de),
-maths majors (theoretically) as well (... I think?)
+maths majors (theoretically) as well (... I think?),
+the files to upload there expect this format:
 
-![](images/paste-809C5790.png)\
+<img src="https://github.com/fabian-s/credentialism/blob/master/README_files/figures/paste-809C5790.png"/>
 
 ```{r export-uni2work}
-results_cs_maths <- filter(results, 
-                           po != "Statistik als HF")
+results_cs_maths <- dplyr::filter(results, 
+                                  po != "Statistik als HF")
 export_uni2work(results_cs_maths, outfile = "demo-uni2work.csv")
 ```
-Then log in at [uni2work](https://uni2work.ifi.lmu.de), create an "external exam", 
-navigate to its "Participants" tab & upload this CSV file. 
+
+Now log in at [uni2work](https://uni2work.ifi.lmu.de), create an "external exam", 
+navigate to its "Participants" tab & upload this CSV file. All done. 

@@ -24,26 +24,30 @@ grade_points <- function(
 
 # puts an HTML table of the grade distribution on the system clipboard
 # (and returns it invisibly)
+#' @importFrom tibble tibble
+#' @import dplyr
+#' @importFrom knitr kable
+#' @importFrom clipr write_clip
 summarize_grades <- function(
   results,  #dataframe containing "grade"-column with output from <grade_points()>
   scheme,  #output from make_grading_scheme
   max_points, # max. possible points
   exclude_invalid = TRUE
 ) {
-  pointranges <- tibble(
+  pointranges <- tibble::tibble(
     grade = levels(results$grade),
     Points = paste0(c("", 0, scheme), "-", c("", scheme - .5, max_points)))
   if (exclude_invalid) {
     pointranges <- pointranges[-1, ]
-    results <- filter(results, grade != "invalid")
+    results <- dplyr::filter(results, grade != "invalid")
   }
   summary_grades <-
-    results %>%  group_by(grade) %>%
+    results %>%  dplyr::group_by(grade) %>%
     dplyr::summarise(`%` = n(),
               `%` = round(`%` / nrow(results) * 100, 1)) |>
-    left_join(pointranges) |>
-    arrange(grade) |>
-    rename("Grade" = grade)
+    dplyr::left_join(pointranges) |>
+    dplyr::arrange(grade) |>
+    dplyr::rename("Grade" = grade)
 
   if (interactive()) {
     summary_grades |> knitr::kable(format = "html") |> clipr::write_clip()
@@ -60,9 +64,11 @@ publish_grades <- function(
   scheme,  #output from make_grading_scheme
   max_points # max. possible points
 ) {
-  output <- results %>% select(matriculation, grade, points) |>
-    arrange(matriculation) |>
-    rename("Matrikelnummer" = matriculation, "Grade" = grade, "Points" = points)
+  output <- results %>% dplyr::select(matriculation, grade, points) |>
+    dplyr::arrange(matriculation) |>
+    dplyr::rename("Matrikelnummer" = matriculation,
+                  "Grade" = grade,
+                  "Points" = points)
   if (interactive()) {
     output |>  knitr::kable(format = "html", align = c("l", "c", "r")) |>
       clipr::write_clip()
