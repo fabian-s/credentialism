@@ -20,7 +20,7 @@ This is not fully developed R package, just some utility functions and this Rmd 
 The intended use is 
 
 1. install the package locally: `remotes::install_github("fabian-s/credentialism")`
-2. download this Rmd file: `utils::download.file(url = "https://github.com/fabian-s/credentialism/blob/main/README.Rmd", destfile = <Your_File>)`  
+2. download this Rmd file: `utils::download.file(url = "https://raw.githubusercontent.com/fabian-s/credentialism/main/README.Rmd", destfile = <Your_File>)`  
 3. modify it so it fits your exam and run the chunks interactively, and copy-paste the relevant outputs into your lecture homepage or the template spreadsheet "Notenliste"-files for the grades.
 
 
