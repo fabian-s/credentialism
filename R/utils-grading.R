@@ -17,7 +17,7 @@ grade_points <- function(
 ) {
   # 0 points are always categorized as invalid / "entwertet"
   cut(points,
-      c(-.01, 0.1, scheme, Inf), right = FALSE,
+      c(-.001, 0.001, scheme, Inf), right = FALSE,
       labels = c("invalid", "5.0", "4.0", "3.7", "3.3", "3.0", "2.7", "2.3",
                  "2.0", "1.7", "1.3", "1.0"))
 }
